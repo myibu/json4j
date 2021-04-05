@@ -93,9 +93,6 @@ public class JSONDecoder {
                 } else {
                     throw new JSONException();
                 }
-//                System.out.println("char:[" + ch + "],classStack=" + classStack);
-//                System.out.println("char:[" + ch + "],keyValueStack=" + keyValueStack);
-//                System.out.println("char:[" + ch + "],stack=" + stack);
             } else if (ch == '}') {
                 if (classStack.isEmpty()) {
                     throw new JSONException();
@@ -137,9 +134,6 @@ public class JSONDecoder {
                 } else {
                     throw new JSONException();
                 }
-//                System.out.println("char:[" + ch + "],classStack=" + classStack);
-//                System.out.println("char:[" + ch + "],keyValueStack=" + keyValueStack);
-//                System.out.println("char:[" + ch + "],stack=" + stack);
             } else if (ch == ']') {
                 if (classStack.isEmpty()) {
                     throw new JSONException();
@@ -175,9 +169,6 @@ public class JSONDecoder {
                 } else {
                     throw new JSONException();
                 }
-//                System.out.println("char:[" + ch + "],classStack=" + classStack);
-//                System.out.println("char:[" + ch + "],keyValueStack=" + keyValueStack);
-//                System.out.println("char:[" + ch + "],stack=" + stack);
             } else if (ch == ':') {
                 String stackStr = "";
                 List<Character> list = stack.popUtilBorder('{');
@@ -194,10 +185,6 @@ public class JSONDecoder {
                 } else {
                     throw new JSONException();
                 }
-
-//                System.out.println("char:[" + ch + "],classStack=" + classStack);
-//                System.out.println("char:[" + ch + "],keyValueStack=" + keyValueStack);
-//                System.out.println("char:[" + ch + "],stack=" + stack);
             } else {
                 stack.push(ch);
             }

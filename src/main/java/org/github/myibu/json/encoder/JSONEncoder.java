@@ -1,14 +1,21 @@
 package org.github.myibu.json.encoder;
 
 import org.github.myibu.json.*;
-import org.github.myibu.json.util.TypeValue;
 
+import java.io.File;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.file.FileSystem;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.github.myibu.json.JSON.EMPTY_CHARS;
-
+/**
+ * @author myibu
+ * @since 1.0
+ */
 public class JSONEncoder {
     Object target;
 
@@ -19,16 +26,18 @@ public class JSONEncoder {
         this.target = target;
     }
 
-    public boolean isJSONPrimary(Object target) {
+    private boolean isJSONPrimary(Object target) {
         if (target == null) {
             return true;
         }
-        return target.getClass() == short.class || target.getClass() == Short.class
-                || target.getClass() == int.class || target.getClass() == Integer.class
-                || target.getClass() == long.class || target.getClass() == Long.class
-                || target.getClass() == float.class || target.getClass() == Float.class
-                || target.getClass() == double.class || target.getClass() == Double.class
-                || target.getClass() == boolean.class || target.getClass() == Boolean.class
+        return target.getClass() == Short.class
+                || target.getClass() == Integer.class
+                || target.getClass() == Long.class
+                || target.getClass() == Float.class
+                || target.getClass() == Double.class
+                || target.getClass() == Boolean.class
+                || target.getClass() == BigInteger.class
+                || target.getClass() == BigDecimal.class
                 || target.getClass() == String.class;
     }
 
@@ -36,11 +45,18 @@ public class JSONEncoder {
         return doEncode(target);
     }
 
+    public String formatEncode(int level) {
+        if (level < 0) {
+            level = 0;
+        }
+        return doFormatEncode(target, level);
+    }
+
     private String doEncode(Object target) {
         if (isJSONPrimary(target)) {
             if (null == target) {
                 return "null";
-            } else if (target.getClass() == boolean.class) {
+            } else if (target.getClass() == Boolean.class) {
                 return (boolean)target ? "true" : "false";
             } else if (target.getClass() == String.class) {
                 return String.format("\"%s\"", target);
@@ -48,55 +64,129 @@ public class JSONEncoder {
                 return  target + "";
             }
         } else if (target instanceof List) {
-            String res = "[";
-            if (((List)target).size() < 2) {
-                for (Object listItem: (List)target) {
-                    res = res + doEncode(listItem);
+            StringBuilder res = new StringBuilder("[");
+            Iterator<?> iterator = ((List<?>)target).iterator();
+            while (iterator.hasNext()) {
+                Object item = iterator.next();
+                res.append(doEncode(item));
+
+                if (iterator.hasNext()) {
+                    res.append(",");
                 }
-            } else {
-                for (Object listItem: (List)target) {
-                    res = res + doEncode(listItem) + ",";
-                }
-                res = res.substring(0, res.length()-1);
             }
-            return res + "]";
+            return res.append("]").toString();
         } else if (target instanceof Map) {
-            String res = "{";
-            if (((Map)target).size() < 2) {
-                for(Map.Entry<String, Object> entry: ((Map<String, Object>)target).entrySet()) {
-                    res = res + String.format("\"%s\":%s", entry.getKey(), doEncode(entry.getValue()));
+            StringBuilder res = new StringBuilder("{");
+            Iterator<? extends Map.Entry<?, ?>> iterator = ((Map<?, ?>)target).entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<?, ?> item = iterator.next();
+                res.append(String.format("\"%s\":%s", item.getKey().toString(), doEncode(item.getValue())));
+
+                if (iterator.hasNext()) {
+                    res.append(",");
                 }
-            } else {
-                for(Map.Entry<String, Object> entry: ((Map<String, Object>)target).entrySet()) {
-                    res = res + String.format("\"%s\":%s,", entry.getKey(), doEncode(entry.getValue()));
-                }
-                res = res.substring(0, res.length()-1);
             }
-            return res + "}";
+            return res.append("}").toString();
         } else {
-            String res = "{";
+            StringBuilder res = new StringBuilder("{");
             Field[] fields = target.getClass().getDeclaredFields();
-            if (fields.length < 2) {
-                for (Field field: fields) {
-                    field.setAccessible(true);
-                    try {
-                        res = res + String.format("\"%s\":%s", field.getName(), doEncode(field.get(target)));
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
+            Iterator<Field> iterator = Arrays.asList(fields).iterator();
+            while (iterator.hasNext()) {
+                Field item = iterator.next();
+                item.setAccessible(true);
+                try {
+                    res.append(String.format("\"%s\":%s", item.getName(), doEncode(item.get(target))));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
                 }
-            } else {
-                for (Field field: fields) {
-                    field.setAccessible(true);
-                    try {
-                        res = res + String.format("\"%s\":%s,", field.getName(), doEncode(field.get(target)));
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
+
+                if (iterator.hasNext()) {
+                    res.append(",");
                 }
-                res = res.substring(0, res.length()-1);
             }
-            return res + "}";
+            return res.append("}").toString();
+
+        }
+    }
+
+    private String doFormatEncode(Object target, int level) {
+        if (isJSONPrimary(target)) {
+            if (null == target) {
+                return "null";
+            } else if (target.getClass() == Boolean.class) {
+                return (boolean)target ? "true" : "false";
+            } else if (target.getClass() == String.class) {
+                return String.format("\"%s\"", target);
+            } else {
+                return  target + "";
+            }
+        } else if (target instanceof List) {
+            StringBuilder res = new StringBuilder("[").append(System.lineSeparator());
+            Iterator<?> iterator = ((List<?>)target).iterator();
+            while (iterator.hasNext()) {
+                Object item = iterator.next();
+
+                for (int i = 0; i < level+1; i++) {
+                    res.append("    ");
+                }
+                res.append(doFormatEncode(item, level+1));
+
+                if (iterator.hasNext()) {
+                    res.append(",").append(System.lineSeparator());
+                }
+            }
+            res.append(System.lineSeparator());
+            for (int i = 0; i < level; i++) {
+                res.append("    ");
+            }
+            return res.append("]").toString();
+        } else if (target instanceof Map) {
+            StringBuilder res = new StringBuilder("{").append(System.lineSeparator());
+            Iterator<? extends Map.Entry<?, ?>> iterator = ((Map<?, ?>)target).entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<?, ?> item = iterator.next();
+
+                for (int i = 0; i < level+1; i++) {
+                    res.append("    ");
+                }
+                res.append(String.format("\"%s\": %s", item.getKey().toString(), doFormatEncode(item.getValue(), level+1)));
+
+                if (iterator.hasNext()) {
+                    res.append(",").append(System.lineSeparator());
+                }
+            }
+            res.append(System.lineSeparator());
+            for (int i = 0; i < level; i++) {
+                res.append("    ");
+            }
+            return res.append("}").toString();
+        } else {
+            StringBuilder res = new StringBuilder("{").append(System.lineSeparator());
+            Field[] fields = target.getClass().getDeclaredFields();
+            Iterator<Field> iterator = Arrays.asList(fields).iterator();
+            while (iterator.hasNext()) {
+                Field item = iterator.next();
+
+                for (int i = 0; i < level+1; i++) {
+                    res.append("    ");
+                }
+                item.setAccessible(true);
+                try {
+                    res.append(String.format("\"%s\": %s", item.getName(), doFormatEncode(item.get(target), level+1)));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+
+                if (iterator.hasNext()) {
+                    res.append(",").append(System.lineSeparator());
+                }
+            }
+            res.append(System.lineSeparator());
+            for (int i = 0; i < level; i++) {
+                res.append("    ");
+            }
+            return res.append("}").toString();
+
         }
     }
 }

@@ -3,6 +3,8 @@ package org.github.myibu.json;
 import org.github.myibu.json.decoder.JSONDecoder;
 import org.github.myibu.json.util.TypeValue;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 /**
@@ -145,5 +147,150 @@ public class JSONArray extends JSON implements List<Object> {
                     typeValue.type() == JSONObject.class ? "object" : "primary"));
         }
         return (JSONArray) typeValue.value();
+    }
+
+    @Override
+    public String toString() {
+        return toJSONString(this);
+    }
+
+    public String getString(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        return value.toString();
+    }
+
+    public Byte getByte(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigInteger) {
+            return ((BigInteger)value).byteValue();
+        }
+        throw new JSONException(String.format("can not cast %s to byte", value));
+    }
+
+    public Short getShort(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigInteger) {
+            return ((BigInteger)value).shortValue();
+        }
+        throw new JSONException(String.format("can not cast %s to short", value));
+    }
+
+    public Integer getInteger(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigInteger) {
+            return ((BigInteger)value).intValue();
+        }
+        throw new JSONException(String.format("can not cast %s to integer", value));
+    }
+
+    public Long getLong(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigInteger) {
+            return ((BigInteger)value).longValue();
+        }
+        throw new JSONException(String.format("can not cast %s to long", value));
+    }
+
+    public Float getFloat(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal)value).floatValue();
+        }
+        throw new JSONException(String.format("can not cast %s to float", value));
+    }
+
+    public Double getDouble(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal)value).doubleValue();
+        }
+        throw new JSONException(String.format("can not cast %s to double", value));
+    }
+
+    public BigDecimal getBigDecimal(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigDecimal) {
+            return (BigDecimal)value;
+        }
+        throw new JSONException(String.format("can not cast %s to BigDecimal", value));
+    }
+
+    public BigInteger getBigInteger(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof BigInteger) {
+            return (BigInteger)value;
+        }
+        throw new JSONException(String.format("can not cast %s to BigInteger", value));
+    }
+
+    public JSONObject getJSONObject(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof JSONObject) {
+            return (JSONObject)value;
+        }
+        throw new JSONException(String.format("can not cast %s to JSONObject", value));
+    }
+
+    public JSONArray getJSONArray(int index) {
+        Object value = get(index);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof JSONArray) {
+            return (JSONArray)value;
+        }
+        throw new JSONException(String.format("can not cast %s to JSONArray", value));
     }
 }

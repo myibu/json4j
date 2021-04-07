@@ -1,17 +1,21 @@
 package org.github.myibu.json;
 
 import java.util.function.Function;
+
+import static org.github.myibu.json.JSONSeparator.QUOTATION;
+
 /**
  * @author myibu
  * @since 1.0
  */
 public enum JSONDataType {
+    /* string type */
     STRING(input -> {
         if (input.length() < 2) {
             return false;
         }
         char[] chars = input.toCharArray();
-        if (chars[0] != '"' || chars[chars.length-1] != '"') {
+        if (chars[0] != QUOTATION || chars[chars.length-1] != QUOTATION) {
             return false;
         }
         input = input.substring(1, input.length()-1);
@@ -35,19 +39,8 @@ public enum JSONDataType {
         return true;
     }),
 
-    NUMBER_INT(input -> {
-        int pointNum = 0;
-        for (char ch : input.toCharArray()) {
-            if ('.' == ch) {
-                pointNum++;
-            } else if (ch < '0' || ch > '9') {
-                return false;
-            }
-        }
-        return pointNum == 0;
-    }),
-
-    NUMBER_FLOAT(input -> {
+    /* number type */
+    NUMBER(input -> {
         int pointNum = 0;
         for (char ch : input.toCharArray()) {
             if ('.' == ch) {
@@ -59,14 +52,19 @@ public enum JSONDataType {
         return pointNum < 2;
     }),
 
+    /* true type */
     BOOL_TRUE("true"::equals),
 
+    /* false type */
     BOOL_FALSE("false"::equals),
 
+    /* null type */
     NULL("null"::equals),
 
+    /* empty type */
     EMPTY(""::equals),
 
+    /* illegal type */
     ILLEGAL(input -> false);
 
     Function<String, Boolean> func;

@@ -15,9 +15,10 @@ import java.util.List;
 public class JSON {
     public static final List<Character> EMPTY_CHARS = Arrays.asList(' ', '\t', '\r', '\n');
 
-    public static <T> T parse(String text, Class<T> clazz) {
-        //todo
-        return null;
+    public static Object parse(String text) {
+        JSONDecoder decoder = new JSONDecoder(text);
+        TypeValue<Class<? extends JSON>> typeValue = decoder.decode();
+        return typeValue.value();
     }
 
     public static String toJSONString(Object bean) {
@@ -25,4 +26,11 @@ public class JSON {
         return encoder.encode();
     }
 
+    public static String format(Object bean) {
+        return format(bean, 0);
+    }
+    public static String format(Object bean, int level) {
+        JSONEncoder encoder = new JSONEncoder(bean);
+        return encoder.formatEncode(level);
+    }
 }

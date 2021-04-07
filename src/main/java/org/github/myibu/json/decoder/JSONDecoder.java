@@ -5,10 +5,16 @@ import org.github.myibu.json.util.KeyValue;
 import org.github.myibu.json.util.Stack;
 import org.github.myibu.json.util.TypeValue;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 
 import static org.github.myibu.json.JSON.EMPTY_CHARS;
-
+import static org.github.myibu.json.JSONSeparator.*;
+/**
+ * @author myibu
+ * @since 1.0
+ */
 public class JSONDecoder {
     String text;
 
@@ -27,14 +33,14 @@ public class JSONDecoder {
         int index = 0;
         while (index <= chars.length - 1) {
             char ch = chars[index];
-            if (ch == '[') {
+            if (ch == LEFT_BRACKETS) {
                 // remove character in [' ', '\t', '\r', '\n']
                 while (!stack.isEmpty() && EMPTY_CHARS.contains(stack.top())) {
                     stack.pop();
                 }
                 stack.push(ch);
                 classStack.push(new TypeValue<>(JSONArray.class, new JSONArray()));
-            } else if (ch == '{') {
+            } else if (ch == LEFT_BRACE) {
                 // remove character in [' ', '\t', '\r', '\n']
                 while (!stack.isEmpty() && EMPTY_CHARS.contains(stack.top())) {
                     stack.pop();
@@ -42,12 +48,12 @@ public class JSONDecoder {
                 stack.push(ch);
                 classStack.push(new TypeValue<>(JSONObject.class, new JSONObject()));
                 keyValueStack.push(KeyValue.KEY_VALUE_BORDER);
-            } else if (ch == ',') {
+            } else if (ch == COMMA) {
                 // remove character in [' ', '\t', '\r', '\n']
                 while (!stack.isEmpty() && EMPTY_CHARS.contains(stack.top())) {
                     stack.pop();
                 }
-                String stackStr = "";
+                String stackStr;
                 if (classStack.top().type() == JSONArray.class) {
                     List<Character> list = stack.popUtilBorder('[');
                     char[] stackChars = new char[list.size()];
@@ -60,14 +66,14 @@ public class JSONDecoder {
                     TypeValue<JSONDataType> stackObj = parse(stackStr);
                     if (stackObj.type() == JSONDataType.EMPTY) {
                         if (((JSONArray) classStack.top().value()).size() == 0) {
-                            throw new JSONException();
+                            throw new JSONException(String.format("Missing element after \",\" delimiter: column %d", index));
                         } else {
                             index++; //index++; continue;
                         }
                     } else if (stackObj.type() != JSONDataType.ILLEGAL) {
                         ((JSONArray) classStack.top().value()).add(stackObj.value());
                     } else {
-                        throw new JSONException();
+                        throw new JSONException(String.format("Illegal json character sequence \"%s\": column %d", stackObj.value(), index));
                     }
                 } else if (classStack.top().type() == JSONObject.class) {
                     List<Character> list = stack.popUtilBorder('{');
@@ -81,21 +87,21 @@ public class JSONDecoder {
                     TypeValue<JSONDataType> stackObj = parse(stackStr);
                     if (stackObj.type() == JSONDataType.EMPTY) {
                         if (keyValueStack.size() <= 1) {
-                            throw new JSONException();
+                            throw new JSONException(String.format("Missing element after \",\" delimiter: column %d", index));
                         } else {
                             //index++; continue;
                         }
                     } else if (stackObj.type() != JSONDataType.ILLEGAL) {
                         keyValueStack.top().value(stackObj.value());
                     } else {
-                        throw new JSONException();
+                        throw new JSONException(String.format("Illegal json character sequence \"%s\": column %d", stackObj.value(), index));
                     }
                 } else {
-                    throw new JSONException();
+                    throw new JSONException(String.format("Missing \"[\" or \"{\" before \",\" delimiter: column %d", index));
                 }
-            } else if (ch == '}') {
+            } else if (ch == RIGHT_BRACE) {
                 if (classStack.isEmpty()) {
-                    throw new JSONException();
+                    throw new JSONException(String.format("Missing \"[\" or \"{\" before \",\" delimiter: column %d", index));
                 }
                 String stackStr;
                 if (classStack.top().type() == JSONObject.class) {
@@ -113,7 +119,7 @@ public class JSONDecoder {
                     } else if (stackObj.type() != JSONDataType.ILLEGAL) {
                         keyValueStack.top().value(stackObj.value());
                     } else {
-                        throw new JSONException();
+                        throw new JSONException(String.format("Illegal json character sequence \"%s\": column %d", stackObj.value(), index));
                     }
 
                     while (!keyValueStack.isEmpty() && !keyValueStack.top().isBorder()) {
@@ -132,13 +138,13 @@ public class JSONDecoder {
                     }
                     stack.pop();
                 } else {
-                    throw new JSONException();
+                    throw new JSONException(String.format("Missing \"[\" delimiter: column %d", index));
                 }
-            } else if (ch == ']') {
+            } else if (ch == RIGHT_BRACKETS) {
                 if (classStack.isEmpty()) {
-                    throw new JSONException();
+                    throw new JSONException(String.format("Missing \"[\" or \"{\" before \",\" delimiter: column %d", index));
                 }
-                String stackStr = "";
+                String stackStr;
                 if (classStack.top().type() == JSONArray.class) {
                     List<Character> list = stack.popUtilBorder('[');
                     char[] stackChars = new char[list.size()];
@@ -154,7 +160,7 @@ public class JSONDecoder {
                     } else if (stackObj.type() != JSONDataType.ILLEGAL) {
                         ((JSONArray) classStack.top().value()).add(stackObj.value());
                     } else {
-                        throw new JSONException();
+                        throw new JSONException(String.format("Illegal json character sequence \"%s\": column %d", stackObj.value(), index));
                     }
 
                     TypeValue<Class<? extends JSON>> topValue = classStack.pop();
@@ -167,10 +173,10 @@ public class JSONDecoder {
                     }
                     stack.pop();
                 } else {
-                    throw new JSONException();
+                    throw new JSONException(String.format("Missing \"{\" delimiter: column %d", index));
                 }
-            } else if (ch == ':') {
-                String stackStr = "";
+            } else if (ch == COLON) {
+                String stackStr;
                 List<Character> list = stack.popUtilBorder('{');
                 char[] stackChars = new char[list.size()];
                 int stackCharIndex = list.size() - 1;
@@ -183,7 +189,7 @@ public class JSONDecoder {
                 if (stackObj.type() == JSONDataType.STRING) {
                     keyValueStack.push(new KeyValue((String)stackObj.value(), null));
                 } else {
-                    throw new JSONException();
+                    throw new JSONException(String.format("Illegal json character sequence \"%s\": column %d", stackObj.value(), index));
                 }
             } else {
                 stack.push(ch);
@@ -191,7 +197,7 @@ public class JSONDecoder {
             index++;
         }
         if (!classStack.isEmpty()) {
-            return new TypeValue(classStack.top().type(), classStack.top().value());
+            return new TypeValue<>(classStack.top().type(), classStack.top().value());
         } else {
             List<Character> list = stack.popUtilBorder(' ');
             char[] stackChars = new char[list.size()];
@@ -203,9 +209,9 @@ public class JSONDecoder {
             String stackStr = new String(stackChars);
             TypeValue<JSONDataType> stackObj = parse(stackStr);
             if (stackObj.type() != JSONDataType.ILLEGAL) {
-                return new TypeValue<>(JSONPrimary.class, stackObj.value());
+                return new TypeValue<>(JSONPrimery.class, stackObj.value());
             } else {
-                throw new JSONException();
+                throw new JSONException(String.format("Illegal json character sequence \"%s\": column %d", stackObj.value(), index));
             }
         }
     }
@@ -219,14 +225,18 @@ public class JSONDecoder {
             return new TypeValue<>(JSONDataType.BOOL_TRUE, "true");
         } else if (JSONDataType.BOOL_FALSE.matches(input)) {
             return new TypeValue<>(JSONDataType.BOOL_FALSE, "false");
-        } else if (JSONDataType.NUMBER_INT.matches(input)) {
-            return new TypeValue<>(JSONDataType.NUMBER_INT, Integer.parseInt(input.strip()));
-        } else if (JSONDataType.NUMBER_FLOAT.matches(input)) {
-            return new TypeValue<>(JSONDataType.NUMBER_FLOAT, Float.parseFloat(input.strip()));
+        } else if (JSONDataType.NUMBER.matches(input)) {
+            if (input.matches("[0-9]+")) {
+                BigInteger bigInteger = new BigInteger(input);
+                return new TypeValue<>(JSONDataType.NUMBER, bigInteger);
+            } else {
+                BigDecimal bigDecimal = new BigDecimal(input);
+                return new TypeValue<>(JSONDataType.NUMBER, bigDecimal);
+            }
         } else if (JSONDataType.STRING.matches(input)) {
             return new TypeValue<>(JSONDataType.STRING, input.substring(1, input.length()-1));
         }
-        return new TypeValue<>(JSONDataType.ILLEGAL, null);
+        return new TypeValue<>(JSONDataType.ILLEGAL, input);
     }
 
 }
